@@ -19,7 +19,6 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol';
     uint256 public position2;
 
     address public baseToken; // for token swap
-    address public zkAuto; // I suppose there should be another contract to invoke func here?
     address public uniswapRouter;
 
     event investSuc(address indexed user, uint256 indexed etefTokenAmount);
@@ -27,16 +26,10 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol';
     event redeemSuc(address indexed user, uint256 indexed etfTokenAmount);
     event reBalanceSuc(address indexed tokenFrom, address indexed tokenTo, uint256 amount);
 
-    modifier onlyzkAuto() {
-        require(msg.sender == zkAuto);
-        _;
-    }
-
     constructor(
         address[] memory asset,
         uint256[] memory positions,
         address _baseToken,
-        address _zkAuto,
         address _uniswapRouter,
         string memory _name,
         string memory _symbol) ERC20(_name, _symbol) payable {
@@ -82,7 +75,7 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol';
     }
 
     //assume this part should be controlled by hyper oracle?
-    function reBalance(bool zeroOrOne, uint256 amountToSwap) public onlyzkAuto {
+    function reBalance(bool zeroOrOne, uint256 amountToSwap) public {
         address tokenFrom = zeroOrOne ? token1: token2;
         address tokenTo = zeroOrOne ? token2: token1;
         address[] memory path = new address[](2);
