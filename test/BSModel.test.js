@@ -20,11 +20,12 @@ describe('BSModel', () => {
         // Mock input parameters
         //const priceHistory = [150, 200, 210, 250, 300]; // Mock price history
         const S = 280; // Current stock price
+        const K = 200; // Current stock price
         const t = 100; // Time to maturity
         const r = 1; // Risk-free interest rate
         const _vol = 100; // volatility
         // Call the calculateC function
-        const C = await blackScholes.calculateC(S, t, r, _vol);
+        const C = await blackScholes.calculateC(S, K, t, r, _vol);
         assert.equal(await blackScholes.C(), 10); // Adjust the expected result based on your calculations
 
         // Assert the expected result

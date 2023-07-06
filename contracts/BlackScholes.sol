@@ -2,43 +2,47 @@ pragma solidity ^0.8.19;
 
 contract BlackScholes {
 
-    int256 public C;
+    uint256 public C;
 
     /**
      * @dev calculateC calculates the call option price
      * @dev for precision into decimals the number must first
      * @dev be multiplied by the precision factor desired
      * @param S current stock price
+     * @param K strike price
      * @param t time to maturity (in block timestamp)
-     * @param t time to maturity (in block timestamp)
+     * @param r interest rate
+     * @param vol volatility
      */
     function calculateC(
         //uint256[] memory _priceHistory,
         uint256 S,
+        uint256 K,
         uint256 t,
         uint256 r,
-        uint256 _vol
-    ) public returns (int256) {
-        //uint _vol = stddev(_priceHistory);
-        C = blackScholesEstimate(S, t, r, _vol);
+        uint256 vol
+    ) public returns (uint256) {
+        C = blackScholesEstimate(S, K, t, r, vol);
         return C;
     }
 
     /**
      * @dev blackScholesEstimate calculates the call option price using the Black-Scholes-Merton model
      * @param S current stock price
+     * @param K the strike price
      * @param t time to maturity (in block timestamp)
      * @param r risk-free interest rate
      * @param vol volatility of the underlying asset
      */
     function blackScholesEstimate(
         uint256 S,
+        uint256 K,
         uint256 t,
         uint256 r,
         uint256 vol
-    ) internal pure returns (int256) {
-        uint256 d1 = (log(S) + ((r + ((vol * vol) / 2)) * t)) / (vol * sqrt(t));
-        int256 d2 = int256(d1) - (int256(vol) * int256(sqrt(t)));
+    ) internal pure returns (uint256) {
+        uint256 d1 = (log(S) - log(K) + ((r + ((vol * vol) / 2)) * t)) / (vol * sqrt(t));
+        uint256 d2 = d1 - vol * sqrt(t);
 
         uint256 N_d1 = cumulativeNormalDistribution(d1);
         uint256 N_d2 = cumulativeNormalDistribution(d2);
