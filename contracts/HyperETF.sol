@@ -38,7 +38,6 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol';
         position1 = positions[0];
         position2 = positions[1];
         baseToken = _baseToken;
-        zkAuto = _zkAuto;
         uniswapRouter = _uniswapRouter;
         owner = payable(msg.sender);
     }
