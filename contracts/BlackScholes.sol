@@ -1,148 +1,102 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {PRBMathSD59x18} from "./PRBMathSD59x18.sol";
+
 contract BlackScholes {
+    using PRBMathSD59x18 for int256;
 
-    uint256 public C;
+    uint256 private constant SCALE = 1e18; // Scaling factor for PRBMathSD59x18
+    uint256 private constant RANGE = 10; // Range of the distribution
+    uint256 private constant MIDPOINT = 5; // Middle point of the distribution
 
-    /**
-     * @dev calculateC calculates the call option price
-     * @dev for precision into decimals the number must first
-     * @dev be multiplied by the precision factor desired
-     * @param S current stock price
-     * @param K strike price
-     * @param t time to maturity (in block timestamp)
-     * @param r interest rate
-     * @param vol volatility
-     */
-    function calculateC(
-        //uint256[] memory _priceHistory,
-        uint256 S,
-        uint256 K,
-        uint256 t,
-        uint256 r,
-        uint256 vol
-    ) public returns (uint256) {
-        C = blackScholesEstimate(S, K, t, r, vol);
-        return C;
-    }
+    int256 public C;
+    function calculateCallOptionPrice(
+        int256 S,
+        int256 K,
+        int256 T,
+        int256 sigma, //vol
+        int256 r
+    )
+    public
+    returns (int256)
+    {
+        // Calculate the components of the Black-Scholes formula
+        int256 d1 = calculateD1(S, K, T, sigma, r);
+        int256 d2 = calculateD2(d1, sigma, T);
+        int256 cumulativeD1 = calculateCumulativeNormalDistribution(d1);
+        int256 cumulativeD2 = calculateCumulativeNormalDistribution(d2);
 
-    /**
-     * @dev blackScholesEstimate calculates the call option price using the Black-Scholes-Merton model
-     * @param S current stock price
-     * @param K the strike price
-     * @param t time to maturity (in block timestamp)
-     * @param r risk-free interest rate
-     * @param vol volatility of the underlying asset
-     */
-    function blackScholesEstimate(
-        uint256 S,
-        uint256 K,
-        uint256 t,
-        uint256 r,
-        uint256 vol
-    ) internal pure returns (uint256) {
-        uint256 d1 = (log(S) - log(K) + ((r + ((vol * vol) / 2)) * t)) / (vol * sqrt(t));
-        uint256 d2 = d1 - vol * sqrt(t);
-
-        uint256 N_d1 = cumulativeNormalDistribution(d1);
-        uint256 N_d2 = cumulativeNormalDistribution(d2);
-
-        uint256 callPrice = (S * N_d1) - (exp(negate(r) * t) * N_d2);
-
+        // Calculate call option price
+        int256 callPrice = calculateCallPrice(S, cumulativeD1, K, cumulativeD2, T, r);
+        C = callPrice;
         return callPrice;
     }
 
-    /**
-     * @dev sqrt calculates the square root of a given number x
-     * @dev for precision into decimals the number must first
-     * @dev be multiplied by the precision factor desired
-     * @param _x uint256 number for the calculation of square root
-     */
-    function sqrt(uint256 _x) public pure returns (uint256) {
-        int256 x = int256(_x);
-        int256 c = (x + 1) / 2;
-        int256 b = x;
-        while (c < b) {
-            b = c;
-            c = (x / c + c) / 2;
-        }
-        return uint256(b);
+    function calculateD1(
+        int256 S,
+        int256 K,
+        int256 T,
+        int256 sigma,
+        int256 r
+    )
+    public
+    returns (int256)
+    {
+        int256 sqrtT = PRBMathSD59x18.sqrt(T);
+        int256 lnS = PRBMathSD59x18.ln(S);
+        int256 lnK = PRBMathSD59x18.ln(K);
+        int256 d1Numerator1 = lnS - lnK;
+        int256 d1Numerator2 = PRBMathSD59x18.powu(sigma, 2);
+        d1Numerator2 = PRBMathSD59x18.div(d1Numerator2, 2e18);
+        int256 d1Numerator3 = r + d1Numerator2;
+        int256 d1Numerator4 = PRBMathSD59x18.mul(d1Numerator3, T);
+        int256 d1Numerator = d1Numerator1 + d1Numerator4;
+
+        int256 d1Denominator = PRBMathSD59x18.mul(sigma, sqrtT);
+        int256 d1 = PRBMathSD59x18.div(d1Numerator, d1Denominator);
+        return d1;
     }
 
-    /**
-     * @dev stddev calculates the standard deviation for an array of integers
-     * @dev precision is the same as sqrt above meaning for higher precision
-     * @dev the decimal place must be moved prior to passing the params
-     * @param numbers uint[] array of numbers to be used in calculation
-     */
-    function stddev(uint256[] memory numbers) public pure returns (uint256 sd) {
-        require(numbers.length > 0, "Empty array");
-
-        uint256 sum = 0;
-        for (uint256 i = 0; i < numbers.length; i++) {
-            sum += numbers[i];
-        }
-        uint256 mean = sum / numbers.length;
-
-        sum = 0;
-        for (uint256 i = 0; i < numbers.length; i++) {
-            int256 diff = int256(numbers[i]) - int256(mean);
-            sum += uint256(diff * diff);
-        }
-
-        sd = sqrt(sum / numbers.length);
-        return sd;
+    function calculateD2(int256 d1, int256 sigma, int256 T) internal pure returns (int256) {
+        int256 sqrtT = PRBMathSD59x18.sqrt(T);
+        int256 toBeSubs = sigma.mul(sqrtT);
+        int256 d2 = d1 - toBeSubs;
+        return d2;
     }
 
-    /**
-     * @dev log is the simple implementation of logarithm function
-     * @param x the number to be used in calculation
-     */
-    function log(uint256 x) internal pure returns (uint256) {
-        uint256 res = 0;
-        uint256 s = x - 1;
-        for (uint256 i = 1; i <= 10; i++) {
-            res += (s / i) * ((x - 1) / x) ** i;
-            s *= (x - 1);
+    // need a erf function
+    function calculateCumulativeNormalDistribution(int256 x) internal pure returns (int256) {
+        //simple implementation
+        if(x < 0) {
+            return 0;
         }
-        return res;
+        int256 sdX = PRBMathSD59x18.mul(x, PRBMathSD59x18.scale());
+        int256 sdRange = PRBMathSD59x18.mul(int256(RANGE), PRBMathSD59x18.scale());
+
+        return PRBMathSD59x18.div(sdX, sdRange);
     }
 
-    function exp(uint256 x) internal pure returns (uint256) {
-        uint256 res = 0;
-        for (uint256 i = 0; i <= 10; i++) {
-            res += (x ** i) / factorial(i);
-        }
-        return res;
-    }
 
-    function factorial(uint256 n) internal pure returns (uint256) {
-        uint256 res = 1;
-        for (uint256 i = 2; i <= n; i++) {
-            res *= i;
-        }
-        return res;
-    }
-
-    function negate(uint256 x) internal pure returns (uint256) {
-        return 0 - x;
-    }
-
-    /**
-     * @dev a simple cdf for current demo, of course this should be updated base on the stock prices.
-     * @param x the number to be used in calculation
-     */
-    function cumulativeNormalDistribution(uint256 x) internal pure returns (uint256) {
-        int256 t = int256(x);
-        int256 b1 = 13931 * 10;
-        int256 b2 = 33768 * 10;
-        int256 b3 = 39734 * 10;
-        int256 b4 = 25137 * 10;
-        int256 b5 = 7667 * 10;
-        int256 one = 10**18;
-
-        int256 y = (one * t) / (one + (b1 * t / (one + (b2 * t / (one + (b3 * t / (one + (b4 * t / (one + (b5 * t / one))))))))));
-
-        return uint256(y) * 10;
+    function calculateCallPrice(
+        int256 S,
+        int256 cumulativeD1,
+        int256 K,
+        int256 cumulativeD2,
+        int256 T,
+        int256 r
+    )
+    internal
+    pure
+    returns (int256)
+    {
+        int256 discountedS = PRBMathSD59x18.mul(S, cumulativeD1);
+        int256 discountedK1 = PRBMathSD59x18.mul(K, cumulativeD2);
+        int256 RT = PRBMathSD59x18.mul(r, T);
+        int256 negateRT = -RT;
+        int256 expERT = PRBMathSD59x18.exp(negateRT);
+        int256 discountedK2 = PRBMathSD59x18.mul(discountedK1, expERT);
+        int256 callPrice = discountedS - discountedK2;
+        return callPrice;
     }
 }
