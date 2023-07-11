@@ -48,9 +48,11 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol';
         address[] memory path = new address[](2);
         path[0] = _token;
         path[1] = token1;
-        IUniswapV2Router01(uniswapRouter).swapTokensForExactTokens(amountToSwap1, type(uint256).max, path, address(this), block.timestamp + 100);
+        IUniswapV2Router01(uniswapRouter).swapTokensForExactTokens(amountToSwap1, type(uint256).max, path, msg.sender, block.timestamp + 100);
         path[1] = token2;
-        IUniswapV2Router01(uniswapRouter).swapTokensForExactTokens(amountToSwap2, type(uint256).max, path, address(this), block.timestamp + 100);
+        IUniswapV2Router01(uniswapRouter).swapTokensForExactTokens(amountToSwap2, type(uint256).max, path, msg.sender, block.timestamp + 100);
+
+        migrate(etfAmount);
 
         emit investSuc(msg.sender, etfAmount);
     }
@@ -83,8 +85,8 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol';
 
         // a naive swap without considering any other transfer activity/slippage
         IUniswapV2Router01(uniswapRouter).swapTokensForExactTokens(amountToSwap, type(uint256).max, path, address(this), block.timestamp + 100);
-        position1 = IERC20(token1).balanceOf(address(this));
-        position2 = IERC20(token2).balanceOf(address(this));
+        position1 = IERC20(token1).balanceOf(address(this))/_totalSupply;
+        position2 = IERC20(token2).balanceOf(address(this))/_totalSupply;
 
         emit reBalanceSuc(tokenFrom, tokenTo, amountToSwap);
     }
