@@ -20,6 +20,13 @@ contract DemoVault is IDemoVault {
         token.mint(address(this), amount);
     }
 
+    function claim(address tokenAddress, uint256 amount) external {
+        IMintableToken token = (tokenAddress == address(token1)) ? token1 : token2;
+
+        // Mint tokens and deposit them into the vault (DemoVault)
+        token.transferFrom(address(this), msg.sender, amount);
+    }
+
     // Swap from token1 to token2
     function swapToken1(uint256 amountIn, uint256 amountOut) external {
         require(token1.transferFrom(msg.sender, address(this), amountIn), "Transfer of token1 failed");
