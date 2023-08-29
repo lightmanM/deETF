@@ -1,9 +1,6 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-  console.log("deployer address:", deployer.address);
-
   // Step 1: Deploy WBTC and WETH MintableTokens
   const MintableToken = await ethers.getContractFactory("MintableToken");
   const wbtc = await MintableToken.deploy("Wrapped Bitcoin", "WBTC");
@@ -27,7 +24,7 @@ async function main() {
   console.log(`DemoVault deployed to: ${demoVaultAddress}`);
 
   // Step 3: Deposit tokens into DemoVault
-  const depositAmount = 10e24;
+  const depositAmount = 1000000000000000000000000n;
   await demoVault.deposit(wbtcAddress, depositAmount);
   await demoVault.deposit(wethAddress, depositAmount);
 
