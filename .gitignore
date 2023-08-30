@@ -13,7 +13,6 @@ arguments.ts
 cache
 artifacts
 abis/
-build
 
 # Others
 lib
