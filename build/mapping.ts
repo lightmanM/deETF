@@ -49,8 +49,11 @@ export function handleEvents(events: Event[]): Bytes {
     let ratio = calcRatio(lastSyncEvent);
 
     // rebalance(uint256)
+    //f4993018cf1db379be1053b15816b2c65cb6d0fbf9e77cd3eeba21dd0e135cb5
     let function_selector = Bytes.fromHexString("6ea30ce9");
     // Set payload to the current price0 when triggering destination contract.
+    // 32 bytes function selector + 28 bytes ratio
+    // 4 bytes selector || 28 bytes parameter. 000000000000000000012345
     let payload = Bytes.fromByteArray(function_selector.concat(Bytes.fromHexString(ratio.toString(16)).padStart(28, 0)));
     return payload;
   }

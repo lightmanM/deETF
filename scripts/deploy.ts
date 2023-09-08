@@ -35,18 +35,18 @@ async function main() {
 
   console.log(`Deposited ${depositAmount} tokens of each kind into DemoVault`);
 
-  // Step 4: Deploy HyperETF
-  const HyperETF = await ethers.getContractFactory("HyperETF");
-  const hyperETF = await HyperETF.deploy(
+  // Step 4: Deploy dETF
+  const dETF = await ethers.getContractFactory("dETF");
+  const dETFContract = await dETF.deploy(
       [wbtcAddress, wethAddress],
       [100, 1000],
       "dETF Token",
       "dETF"
   );
-  await hyperETF.waitForDeployment();
-  const HyperETFAddress = await hyperETF.getAddress();
+  await dETFContract.waitForDeployment();
+  const dETFAddress = await dETFContract.getAddress();
 
-  console.log(`HyperETF deployed to: ${HyperETFAddress}`);
+  console.log(`dETF deployed to: ${dETFAddress}`);
 
   // Other logic, if needed
 }
