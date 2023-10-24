@@ -1,5 +1,5 @@
 specVersion: 0.0.1
-name: dETF(WBTC-WETH)
+name: dETF
 description: Demo graph for zkAutomation. Use the source contract address as the trigger payload.
 repository: https://github.com/hyperoracle/zkgraph
 dataSources:
